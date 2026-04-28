@@ -26,7 +26,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U webhook"]
+      test: ["CMD-SHELL", "pg_isready -U webhook -d webhook_relay"]
       interval: 5s
       timeout: 3s
       retries: 5
