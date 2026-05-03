@@ -60,7 +60,11 @@ async def create_source(payload: SourceCreate, db: AsyncSession = Depends(get_db
        - Build inbound_url as f"/in/{source.token}"
        - Convert created_at to ISO string
     """
-    raise NotImplementedError("Implement create_source")
+    new_source = Source(name = payload.name)
+    db.add(new_source)
+    await db.flush()
+    return SourceResponse(id = new_source.id, name = new_source.name, token= new_source.token, inbound_url=f"/in/{new_source.token}", created_at=new_source.created_at.isoformat())
+
 
 
 @router.get("/{source_id}/events")
