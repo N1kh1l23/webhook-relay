@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.source import Source
 from app.models.event import Event
+import json
 
 router = APIRouter()
 
@@ -41,4 +42,20 @@ async def receive_webhook(source_token: str, request: Request, db: AsyncSession 
     - For non-JSON bodies, catch JSONDecodeError and store the raw text as {"raw": body_text}
     - request.headers is a special type — cast with dict() to make it JSON-serializable
     """
-    raise NotImplementedError("Implement receive_webhook")
+    token_check = await db.execute(select(Source).where(Source.token == source_token))
+    check = token_check.scalar_one_or_none()
+    if check is None:
+        raise HTTPException(404)
+    headers = dict(request.headers)
+    query_params = dict(request.query_params)
+    body_text = await request.body()
+    body_text = body_text.decode()
+    try:
+      body = json.loads(body_text)  
+    except json.JSONDecodeError:
+      body = {"raw": body_text}
+    newEvent = Event(source_id = check.id, headers=headers, query_params=query_params, body=body, status = "pending")
+    db.add(newEvent)
+    await db.flush()
+    return {"event_id": str(newEvent.id), "status": "accepted"}
+   

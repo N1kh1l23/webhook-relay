@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import ForeignKey, String, Text, DateTime
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -18,5 +18,6 @@ class Event(Base):
     query_params: Mapped[dict] = mapped_column(JSONB, default=dict)
     status: Mapped[str] = mapped_column(String(20), default="pending")
     received_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc)
+    DateTime(timezone=True),
+    default=lambda: datetime.now(timezone.utc)
     )
