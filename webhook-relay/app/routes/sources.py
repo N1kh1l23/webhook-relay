@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.source import Source
 from app.models.event import Event
+from datetime import datetime
 
 router = APIRouter()
 
@@ -30,7 +31,7 @@ class SourceResponse(BaseModel):
     name: str
     token: str
     inbound_url: str  # Build this from the token: f"/in/{token}"
-    created_at: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -42,7 +43,7 @@ class EventResponse(BaseModel):
     body: dict | None
     query_params: dict
     status: str
-    received_at: str
+    received_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -63,7 +64,7 @@ async def create_source(payload: SourceCreate, db: AsyncSession = Depends(get_db
     new_source = Source(name = payload.name)
     db.add(new_source)
     await db.flush()
-    return SourceResponse(id = new_source.id, name = new_source.name, token= new_source.token, inbound_url=f"/in/{new_source.token}", created_at=new_source.created_at.isoformat())
+    return SourceResponse(id = new_source.id, name = new_source.name, token= new_source.token, inbound_url=f"/in/{new_source.token}", created_at=new_source.created_at)
 
 
 
@@ -75,4 +76,13 @@ async def list_events(source_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     2. Query all Events where source_id matches, ordered by received_at desc
     3. Return a list of EventResponse objects
     """
-    raise NotImplementedError("Implement list_events")
+    match = await db.execute(select(Source).where(Source.id == source_id))
+    check = match.scalar_one_or_none()
+    if check is None:
+        raise HTTPException(404)
+    query = await db.execute(select(Event).where(Event.source_id == source_id).order_by(Event.received_at.desc()))
+    final_query = query.scalars().all()
+    events = []
+    for e in final_query:
+        events.append(EventResponse(id = e.id, source_id= e.source_id, headers = e.headers, body = e.body, query_params= e.query_params, status= e.status, received_at= e.received_at))
+    return(events)
