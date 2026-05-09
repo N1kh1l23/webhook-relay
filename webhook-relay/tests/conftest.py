@@ -8,6 +8,7 @@ from collections.abc import AsyncGenerator
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.database import Base, get_db
@@ -15,9 +16,10 @@ from app.main import app
 
 # Use a separate test database (same Postgres, different DB name)
 # For simplicity in local dev, we'll use the same DB but roll back each test
-TEST_DATABASE_URL = "postgresql+asyncpg://webhook:webhook@localhost:5432/webhook_relay_test"
+TEST_DATABASE_URL = "postgresql+asyncpg://webhook:webhook@db:5432/webhook_relay_test"
 
-test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+
+test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 test_session = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
