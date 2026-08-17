@@ -79,7 +79,7 @@ async def list_events(source_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     match = await db.execute(select(Source).where(Source.id == source_id))
     check = match.scalar_one_or_none()
     if check is None:
-        raise HTTPException(404)
+        raise HTTPException(404, detail = "Source id does not exist")
     query = await db.execute(select(Event).where(Event.source_id == source_id).order_by(Event.received_at.desc()))
     final_query = query.scalars().all()
     events = []

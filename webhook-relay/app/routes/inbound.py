@@ -45,7 +45,7 @@ async def receive_webhook(source_token: str, request: Request, db: AsyncSession 
     token_check = await db.execute(select(Source).where(Source.token == source_token))
     check = token_check.scalar_one_or_none()
     if check is None:
-        raise HTTPException(404)
+        raise HTTPException(404, detail = "Token was not found")
     headers = dict(request.headers)
     query_params = dict(request.query_params)
     body_text = await request.body()

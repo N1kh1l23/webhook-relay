@@ -145,6 +145,7 @@ async def test_list_events_multiple(client: AsyncClient):
     event_respone = await client.get(f"/sources/{data['id']}/events")
     event_data = event_respone.json()
     assert len(event_data) == 3
-    assert event_data[0]["body"] == payloads[-1]
+    assert [event["body"] for event in event_data] == list(reversed(payloads))
+
 
 
