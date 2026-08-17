@@ -10,5 +10,9 @@ Found out how to implement 2 endpoints so far - 1 creates the source and the oth
 
 try/except helps to catch errors.
 
-await pauses code until the fuction finishes - used in async functions - pause without blocking everything
+await pauses code until the fuction finishes - used in async functions - pause without blocking everything - let's multiple requests be handled at 1 time.
+
+spent 1 hour debugging tests that worked by itself but not together; pytest asyncio creates a new event loop per test but sqlalchemy's default connection pool refuses connections across all loops - hence breaking it. I fixed it with a Nullpool
+
+You test an API endpoint by sending a request through an asynch client - parse the response.json() into a dict and writing 1 assertion per thing to verify
 
