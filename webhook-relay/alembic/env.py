@@ -11,7 +11,7 @@ from app.config import settings
 from app.database import Base
 
 # Import all models so Alembic can see them
-from app.models import source, event  # noqa: F401
+from app.models import source, event, delivery_attempt  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.sync_database_url)
