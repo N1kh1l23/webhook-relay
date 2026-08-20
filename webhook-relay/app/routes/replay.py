@@ -8,6 +8,7 @@ Endpoints:
 import time
 
 import httpx
+from httpx import AsyncClient
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -63,5 +64,32 @@ async def replay_event(
     event = event_check.scalar_one_or_none()
     if event is None:
         raise HTTPException(404, detail = "ID was not found")
+    attempt_number_check = await db.execute(select(func.count()).where(DeliveryAttempt.event_id == event_id))
+    attempt_number = attempt_number_check.scalar_one() + 1
+    start = time.perf_counter()
 
+    try:
+        async with AsyncClient(timeout=5.0) as ac:
+            resp = await ac.post(payload.destination_url, json=event.body)
+        status = resp.status_code
+        response_text = resp.text
+    except httpx.RequestError:
+        status = None
+        response_text = None
+
+    duration_ms = int((time.perf_counter() - start) * 1000)
+
+    if (status is not None) and (199 < status < 300):
+        event_status =  "delivered"
+    else:
+        event_status =  "failed"
+
+    truncated_text = response_text[:1000] if response_text is not None else None
+    newDeliveryAttempt = DeliveryAttempt(event_id = event.id, destination_url = payload.destination_url, response_status = status, response_body = truncated_text, duration_ms = duration_ms, attempt_number = attempt_number)
+    db.add(newDeliveryAttempt)
+    await db.flush()
+
+    event.status = event_status
+
+    return {"status": event_status,"response_status": status}
     

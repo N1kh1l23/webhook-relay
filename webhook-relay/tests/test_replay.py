@@ -1,20 +1,25 @@
 import pytest
 import httpx
 from httpx import AsyncClient
+from app.routes import replay
 
 class FakeResponse:
     def __init__(self, status_code, text):
         self.status_code = status_code
         self.text = text
 
-async def fake_post_success(self, *args, **kwargs):
-    return FakeResponse(200, "ok")
+class ClientReplacement:
+    def __init__(self, *args, **kwargs):
+        pass
 
-async def fake_post_fail(self, *args, **kwargs):
-    return FakeResponse(500, "yes")
+    async def __aenter__(self):
+        return self
 
-async def fake_post_timeout(self, *args, **kwargs):
-    raise httpx.TimeoutException("No response exists")
+    async def post(self, url, *args, **kwargs):
+        return FakeResponse(200, "ok")
+
+    async def __aexit__(self, exc_type, exc, tb):
+        pass
 
 @pytest.mark.asyncio
 async def test_replay_success(client: AsyncClient, monkeypatch):
@@ -26,7 +31,7 @@ async def test_replay_success(client: AsyncClient, monkeypatch):
     event_data = event_response.json()
     event_id = event_data["event_id"]
 
-    monkeypatch.setattr(httpx.AsyncClient, "post", fake_post_success)
+    monkeypatch.setattr(replay, "AsyncClient", ClientReplacement)
 
     response = await client.post(
         f"/events/{event_id}/replay", json = {"destination_url": "https://hi.com/yo"}
