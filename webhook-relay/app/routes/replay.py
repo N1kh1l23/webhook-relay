@@ -8,6 +8,8 @@ Endpoints:
 import time
 
 import httpx
+import uuid
+from datetime import datetime
 from httpx import AsyncClient
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -18,12 +20,24 @@ from app.database import get_db
 from app.models.delivery_attempt import DeliveryAttempt
 from app.models.event import Event
 
+
 router = APIRouter()
 
 
 class ReplayRequest(BaseModel):
     destination_url: str
 
+class AttemptResponse(BaseModel):
+    id: uuid.UUID
+    event_id: uuid.UUID
+    destination_url: str
+    response_status: int | None
+    response_body: str | None
+    duration_ms: int
+    attempt_number: int
+    attempted_at: datetime
+
+    model_config = {"from_attributes": True}
 
 @router.post("/events/{event_id}/replay")
 async def replay_event(
@@ -92,4 +106,20 @@ async def replay_event(
     event.status = event_status
 
     return {"status": event_status,"response_status": status}
+
+@router.get("/events/{event_id}/attempts")
+async def list_attempts(
+    event_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    event_check = await db.execute(select(Event).where(Event.id == event_id))
+    event = event_check.scalar_one_or_none()
+    if event is None:
+        raise HTTPException(404, detail = "ID was not found")
+    
+    attempts_result = await db.execute(select(DeliveryAttempt).where(DeliveryAttempt.event_id == event_id).order_by(DeliveryAttempt.attempt_number))
+    attempts = attempts_result.scalars().all()
+    attempt_responses = [AttemptResponse.model_validate(a) for a in attempts]
+    return attempt_responses
+    
     
