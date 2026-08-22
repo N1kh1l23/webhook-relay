@@ -4,14 +4,15 @@ Inbound Webhook Capture — YOU implement the handler logic.
 Endpoint:
   POST /in/{source_token} — Receive a webhook, store the raw request, return 202
 """
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.source import Source
 from app.models.event import Event
-import json
+from app.models.source import Source
 
 router = APIRouter()
 
@@ -51,11 +52,10 @@ async def receive_webhook(source_token: str, request: Request, db: AsyncSession 
     body_text = await request.body()
     body_text = body_text.decode()
     try:
-      body = json.loads(body_text)  
+      body = json.loads(body_text)
     except json.JSONDecodeError:
       body = {"raw": body_text}
     newEvent = Event(source_id = check.id, headers=headers, query_params=query_params, body=body, status = "pending")
     db.add(newEvent)
     await db.flush()
     return {"event_id": str(newEvent.id), "status": "accepted"}
-   

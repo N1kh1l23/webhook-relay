@@ -6,6 +6,7 @@ Endpoints:
   GET  /sources/{id}/events — List all events received by this source
 """
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -13,9 +14,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.source import Source
 from app.models.event import Event
-from datetime import datetime
+from app.models.source import Source
 
 router = APIRouter()
 
