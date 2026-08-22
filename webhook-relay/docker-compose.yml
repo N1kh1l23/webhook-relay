@@ -16,6 +16,20 @@ services:
       - ./alembic:/code/alembic
       - ./tests:/code/tests
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+  
+  worker:
+    build: .
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://webhook:webhook@db:5432/webhook_relay
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/code/app
+    command: arq app.worker.WorkerSettings --watch app
 
   db:
     image: postgres:16-alpine
