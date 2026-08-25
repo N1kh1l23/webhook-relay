@@ -14,6 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.database import Base, get_db
 from app.main import app
+from types import SimpleNamespace
+from app.queue import get_redis
 
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
@@ -40,9 +42,21 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
     async with test_session() as session:
         yield session
 
+class FakeArqRedis:
+    def __init__(self):
+        self.enqueued = []
+
+    async def enqueue_job(self, function_name, *args, **kwargs):
+        self.enqueued.append((function_name, args, kwargs))
+        return SimpleNamespace(job_id="fake-job-id")
+
 
 @pytest_asyncio.fixture
-async def client(db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+async def fake_redis() -> FakeArqRedis:
+    return FakeArqRedis()
+
+@pytest_asyncio.fixture
+async def client(db: AsyncSession, fake_redis) -> AsyncGenerator[AsyncClient, None]:
     """HTTP client that talks to the FastAPI app with the test DB."""
     async def override_get_db():
         async with test_session() as session:
@@ -54,6 +68,7 @@ async def client(db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
                 raise
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_redis] = lambda: fake_redis
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
     app.dependency_overrides.clear()

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.config import settings
 from app.services.delivery import deliver_event
-
+import app.models
 
 async def startup(ctx):
     engine = create_async_engine(settings.database_url, echo=False)

@@ -52,3 +52,33 @@ async def test_list_attempts_not_found(client: AsyncClient):
     fake_id = str(uuid.uuid4())
     fake_response = await client.get(f"/events/{fake_id}/attempts")
     assert fake_response.status_code == 404
+
+@pytest.mark.asyncio
+async def test_replay_enqueues_job(client: AsyncClient, fake_redis):
+    source_response = await client.post("/sources", json={"name": "replay-test"})
+    source_data = source_response.json()
+    new_token = source_data["token"]
+
+    event_response = await client.post(f"/in/{new_token}", json={"event": "test"})
+    event_data = event_response.json()
+    event_id = event_data["event_id"]
+
+    response = await client.post(
+        f"/events/{event_id}/replay", json={"destination_url": "https://hi.com/yo"}
+    )
+
+    assert response.status_code == 202
+    data = response.json()
+    assert data["job_id"] == "fake-job-id"
+    assert data["event_id"] == event_id
+    assert len(fake_redis.enqueued) == 1
+
+@pytest.mark.asyncio
+async def test_replay_unknown_event_not_enqueued(client: AsyncClient, fake_redis):
+    fake_id = str(uuid.uuid4())
+    response = await client.post(
+        f"/events/{fake_id}/replay", json={"destination_url": "https://hi.com/yo"}
+    )
+
+    assert response.status_code == 404
+    assert len(fake_redis.enqueued) == 0

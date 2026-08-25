@@ -46,33 +46,11 @@ async def replay_event(
     redis: ArqRedis = Depends(get_redis)
 ):
     """
-    TODO — Implement this yourself:
+     Queue a stored event for delivery to a destination URL.
 
-    1. Look up the Event by id; 404 with a detail if missing.
-
-    2. Work out attempt_number — count existing DeliveryAttempt rows for this
-       event and add one. (You left the column with no default, so you must set it.)
-
-    3. Start a timer before the request. time.perf_counter() is the right tool.
-
-    4. Send it, with a 5s timeout per ARCHITECTURE.md:
-           async with httpx.AsyncClient(timeout=5.0) as ac:
-               resp = await ac.post(payload.destination_url, json=event.body)
-       On success you have resp.status_code and resp.text.
-       Wrap in try/except — httpx raises when no response arrives at all.
-       Catch httpx.RequestError (TimeoutException is a subclass of it).
-
-    5. Compute duration_ms in both paths — success AND failure.
-
-    6. Decide the event's new status: "delivered" if the destination answered
-       2xx, otherwise "failed".
-
-    7. Create the DeliveryAttempt row, db.add(), await db.flush().
-       Truncate response_body to the first 1000 chars per the spec.
-
-    8. Set event.status.
-
-    9. Return keys matching what your test asserts: "status" and "response_status".
+    Confirms the event exists, then enqueues a job and returns 202. The
+    outbound request runs in the arq worker, not in this request, so no
+    delivery outcome is known here — poll GET /events/{event_id}/attempts.
     """
     event_check = await db.execute(select(Event).where(Event.id == event_id))
     event = event_check.scalar_one_or_none()
