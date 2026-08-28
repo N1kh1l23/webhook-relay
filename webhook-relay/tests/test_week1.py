@@ -14,7 +14,7 @@ from httpx import AsyncClient
 async def test_create_source(client: AsyncClient):
     """
     POST /sources with {"name": "my-test-source"}
-    
+
     Assert:
     - Response status is 201
     - Response JSON has "id", "name", "token", "inbound_url", "created_at"
@@ -94,7 +94,7 @@ async def test_receive_webhook(client: AsyncClient):
 async def test_invalid_token_returns_404(client: AsyncClient):
     """
     POST any JSON body to /in/nonexistent-token-12345
-    
+
     Assert:
     - Response status is 404
     """
@@ -108,7 +108,7 @@ async def test_list_events_empty(client: AsyncClient):
     """
     1. Create a source
     2. GET /sources/{source_id}/events without sending any webhooks
-    
+
     Assert:
     - Response status is 200
     - Response is an empty list
@@ -128,7 +128,7 @@ async def test_list_events_multiple(client: AsyncClient):
     1. Create a source
     2. Send 3 different webhook payloads to /in/{token}
     3. GET /sources/{source_id}/events
-    
+
     Assert:
     - Response has exactly 3 events
     - Events are ordered by received_at descending (newest first)
@@ -140,7 +140,7 @@ async def test_list_events_multiple(client: AsyncClient):
     payloads = [{"x": 0}, {"y": 1}, {"z": 2}]
     for x in payloads:
         await client.post(f"/in/{data['token']}", json= x)
-    
+
     #Get sources and assertions
     event_respone = await client.get(f"/sources/{data['id']}/events")
     event_data = event_respone.json()

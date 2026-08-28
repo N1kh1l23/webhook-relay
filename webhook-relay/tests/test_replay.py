@@ -1,9 +1,11 @@
-import pytest
 import uuid
-import httpx
+
+import pytest
 from httpx import AsyncClient
+
 from app.services import delivery
 from app.services.delivery import deliver_event
+
 
 class FakeResponse:
     def __init__(self, status_code, text):
@@ -40,7 +42,7 @@ async def test_list_attempts(db, client: AsyncClient, monkeypatch):
         await deliver_event(db, event_id, "https://hi.com/yo")
 
     response = await client.get(f"/events/{event_id}/attempts")
-    
+
     data = response.json()
     assert response.status_code == 200
     assert len(data) == 2

@@ -1,11 +1,13 @@
-import httpx 
+import httpx
 import pytest
 from httpx import AsyncClient
-from app.services import delivery
-from app.services.delivery import deliver_event
 from sqlalchemy import select
+
 from app.models.delivery_attempt import DeliveryAttempt
 from app.models.event import Event
+from app.services import delivery
+from app.services.delivery import deliver_event
+
 
 class FakeResponse:
     def __init__(self, status_code, text):
@@ -119,4 +121,4 @@ async def test_delivery_timeout(db, client: AsyncClient, monkeypatch):
     event_result_check = await db.execute(select(Event).where(Event.id == event_id))
     event_result = event_result_check.scalar_one_or_none()
     assert event_result.status == "failed"
-    
+

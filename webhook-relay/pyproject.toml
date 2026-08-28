@@ -31,6 +31,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.ruff]
 line-length = 100
+extend-exclude = ["alembic/versions"]
 target-version = "py312"
 
 [tool.ruff.lint]

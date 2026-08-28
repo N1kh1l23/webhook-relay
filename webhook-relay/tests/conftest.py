@@ -3,18 +3,16 @@ Shared test fixtures. This is boilerplate — study it so you understand
 how the test database and client are set up, but this is config, not logic.
 """
 import os
-import asyncio
 from collections.abc import AsyncGenerator
+from types import SimpleNamespace
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.database import Base, get_db
 from app.main import app
-from types import SimpleNamespace
 from app.queue import get_redis
 
 TEST_DATABASE_URL = os.getenv(

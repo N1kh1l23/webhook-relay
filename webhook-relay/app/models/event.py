@@ -12,7 +12,9 @@ class Event(Base):
     __tablename__ = "events"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    source_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("sources.id"), index=True)
+    source_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("sources.id"), index=True
+    )
     headers: Mapped[dict] = mapped_column(JSONB, default=dict)
     body: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     query_params: Mapped[dict] = mapped_column(JSONB, default=dict)

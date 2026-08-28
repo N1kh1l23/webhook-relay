@@ -1,17 +1,18 @@
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from alembic import context
 from app.config import settings
 from app.database import Base
 
 # Import all models so Alembic can see them
-from app.models import source, event, delivery_attempt  # noqa: F401
+from app.models import delivery_attempt, event, source  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.sync_database_url)

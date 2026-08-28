@@ -64,7 +64,11 @@ async def create_source(payload: SourceCreate, db: AsyncSession = Depends(get_db
     new_source = Source(name = payload.name)
     db.add(new_source)
     await db.flush()
-    return SourceResponse(id = new_source.id, name = new_source.name, token= new_source.token, inbound_url=f"/in/{new_source.token}", created_at=new_source.created_at)
+    return SourceResponse(id=new_source.id,
+                          name=new_source.name,
+                          token= new_source.token,
+                          inbound_url=f"/in/{new_source.token}",
+                          created_at=new_source.created_at)
 
 
 
@@ -80,9 +84,9 @@ async def list_events(source_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     check = match.scalar_one_or_none()
     if check is None:
         raise HTTPException(404, detail = "Source id does not exist")
-    query = await db.execute(select(Event).where(Event.source_id == source_id).order_by(Event.received_at.desc()))
+    query = await db.execute(select(Event)
+                             .where(Event.source_id == source_id)
+                             .order_by(Event.received_at.desc()))
     final_query = query.scalars().all()
-    events = []
-    for e in final_query:
-        events.append(EventResponse(id = e.id, source_id= e.source_id, headers = e.headers, body = e.body, query_params= e.query_params, status= e.status, received_at= e.received_at))
-    return(events)
+    events = [EventResponse.model_validate(event) for event in final_query]
+    return events

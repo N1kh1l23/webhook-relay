@@ -55,7 +55,11 @@ async def receive_webhook(source_token: str, request: Request, db: AsyncSession 
       body = json.loads(body_text)
     except json.JSONDecodeError:
       body = {"raw": body_text}
-    newEvent = Event(source_id = check.id, headers=headers, query_params=query_params, body=body, status = "pending")
-    db.add(newEvent)
+    new_event = Event(source_id=check.id,
+                      headers=headers,
+                      query_params=query_params,
+                      body=body,
+                      status="pending")
+    db.add(new_event)
     await db.flush()
-    return {"event_id": str(newEvent.id), "status": "accepted"}
+    return {"event_id": str(new_event.id), "status": "accepted"}
