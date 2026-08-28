@@ -2,9 +2,11 @@ from contextlib import asynccontextmanager
 
 from arq import create_pool
 from arq.connections import RedisSettings
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from sqlalchemy import text
 
 from app.config import settings
+from app.database import engine
 from app.routes import inbound, replay, sources
 
 
@@ -28,5 +30,31 @@ app.include_router(inbound.router, tags=["inbound"])
 
 
 @app.get("/health")
-async def health():
-    return {"status": "ok"}
+async def health(request: Request):
+
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        postgres = "up"
+    except Exception:
+        postgres = "down"
+
+    pool = getattr(request.app.state, "redis", None)
+
+    if pool is None:
+        redis = "down"
+    else:
+        try:
+            await pool.ping()
+            redis = "up"
+        except Exception:
+            redis = "down"
+
+    if postgres == "up" and redis == "up":
+        status = "ok"
+    else:
+        status = "degraded"
+
+    checks = {"postgres": postgres, "redis": redis}
+    response = {"status": status, "checks": checks}
+    return response
