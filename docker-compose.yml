@@ -1,3 +1,5 @@
+name: webhook-relay
+
 services:
   api:
     build:
