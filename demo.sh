@@ -4,10 +4,13 @@ command -v jq >/dev/null || { echo "jq is required: https://jqlang.github.io/jq/
 BASE_URL="${1:-https://nikhil-webhook-relay.fly.dev}"
 DEST="https://httpbin.org/post"
 curl -s "$BASE_URL"/health >/dev/null
+echo "Creating source"
 source_response=$(curl -s -X POST "$BASE_URL/sources" -H "Content-Type: application/json" -d '{"name": "demo"}')
 token=$(echo "$source_response" | jq -r '.token')
+echo "Sending a webhook to the source"
 webhook_response=$(curl -s -X POST "$BASE_URL/in/$token" -H "Content-Type: application/json" -d '{"event": "user.created", "id": 42}')
 event_id=$(echo "$webhook_response" | jq -r '.event_id')
+echo "Replaying the event to $DEST"
 replay_request_response=$(curl -s -X POST "$BASE_URL/events/$event_id/replay" -H "Content-Type: application/json" -d "{\"destination_url\": \"$DEST\"}")
 job_id=$(echo "$replay_request_response" | jq -r '.job_id')
 echo "Waiting for the worker to deliver..."
