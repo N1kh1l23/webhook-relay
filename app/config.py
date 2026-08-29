@@ -1,6 +1,8 @@
-from pydantic_settings import BaseSettings
-from pydantic import field_validator
 from urllib.parse import urlsplit, urlunsplit
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
+
 
 class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://webhook:webhook@localhost:5432/webhook_relay"

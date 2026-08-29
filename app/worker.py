@@ -24,5 +24,9 @@ async def queued_replay_job(ctx, event_id: str, destination_url: str) -> None:
 class WorkerSettings:
     functions = [queued_replay_job]
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
+    # arq polls Redis for queued jobs; Upstash bills per command, so the
+    # default 0.5s poll is ~5M commands/month. 2s trades worst-case pickup
+    # latency for roughly a quarter of the cost.
+    poll_delay = 2
     on_startup = startup
     on_shutdown = shutdown
