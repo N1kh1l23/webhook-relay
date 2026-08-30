@@ -1,7 +1,8 @@
 import httpx
 import pytest
-
-from app.services.retry_policy import Outcome, classify, next_delay
+from datetime import datetime, timedelta, timezone
+from email.utils import format_datetime
+from app.services.retry_policy import Outcome, classify, next_delay, parse_retry_after
 
 
 @pytest.mark.parametrize("status_code, expected", [(200, Outcome.SUCCESS),
@@ -57,3 +58,24 @@ def test_next_delay_respects_cap():
 def test_next_delay_floors_below_base():
     result = next_delay(0, base_ms=1000, cap_ms=300000)
     assert result == 1000
+
+@pytest.mark.parametrize("header_value, expected",
+                        [("120", 120_000),
+                        ("0", 0),
+                        ("-50", None),
+                        ("soon", None),
+                        (None, None),
+                        ("999999999", 600_000)])
+def test_parse_retry_after(header_value, expected):
+    if header_value is None:
+        response = httpx.Response(429)
+    else:
+        response = httpx.Response(429, headers={"Retry-After": header_value})
+    assert parse_retry_after(response) == expected
+
+def test_parse_retry_after_http_date():
+    future = datetime.now(timezone.utc) + timedelta(seconds=120)
+    header_value = format_datetime(future, usegmt=True)
+    response = httpx.Response(429, headers={"Retry-After": header_value})
+    result = parse_retry_after(response)
+    assert 115000 <= result <= 120000

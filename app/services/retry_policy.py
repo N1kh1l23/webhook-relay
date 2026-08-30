@@ -1,7 +1,9 @@
-from enum import Enum
-
-import httpx
 import random
+from enum import Enum
+from email.utils import parsedate_to_datetime
+from datetime import datetime, timezone
+import httpx
+
 
 class Outcome(Enum):
     SUCCESS = "success"
@@ -37,3 +39,20 @@ def classify(result: httpx.Response | Exception) -> Outcome:
 def next_delay(previous_delay_ms: int, base_ms: int = 15_000, cap_ms: int = 300_000) -> int:
     randnum = random.randint(base_ms, max(previous_delay_ms * 3, base_ms))
     return min(randnum, cap_ms)
+
+def parse_retry_after(response: httpx.Response, max_honored_ms: int = 600_000) -> int | None:
+    header_value = response.headers.get("Retry-After")
+    if header_value is None:
+        return None
+    try:
+        seconds = int(header_value)
+    except ValueError:
+        try:
+            target = parsedate_to_datetime(header_value)
+        except (ValueError, TypeError):
+            return None
+        seconds = int((target - datetime.now(timezone.utc)).total_seconds())
+    if seconds < 0:
+        return None
+    return min(seconds * 1000, max_honored_ms)
+
