@@ -8,6 +8,11 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://webhook:webhook@localhost:5432/webhook_relay"
     redis_url: str = "redis://localhost:6379/0"
 
+    # Retry policy. Env-overridable so demo.sh can shorten the curve.
+    max_delivery_attempts: int = 6
+    retry_base_ms: int = 15_000
+    retry_cap_ms: int = 300_000
+
     @field_validator("database_url")
     @classmethod
     def normalize_database_url(cls, v: str) -> str:

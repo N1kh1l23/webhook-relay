@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from arq.connections import RedisSettings
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -17,9 +19,27 @@ async def startup(ctx):
 async def shutdown(ctx):
     await ctx["engine"].dispose()
 
-async def queued_replay_job(ctx, event_id: str, destination_url: str) -> None:
+
+async def queued_replay_job(
+    ctx,
+    event_id: str,
+    destination_url: str,
+    previous_delay_ms: int | None = None,
+) -> None:
     async with ctx["session_factory"]() as session:
-        await deliver_event(session, event_id, destination_url)
+        result = await deliver_event(session, event_id, destination_url, previous_delay_ms)
+
+        if not result.should_retry:
+            return
+
+        await ctx["redis"].enqueue_job(
+            "queued_replay_job",
+            event_id,
+            destination_url,
+            result.computed_delay_ms,
+            _defer_by=timedelta(milliseconds=result.applied_delay_ms),
+        )
+
 
 class WorkerSettings:
     functions = [queued_replay_job]

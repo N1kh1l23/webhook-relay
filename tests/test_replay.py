@@ -1,16 +1,12 @@
 import uuid
 
+import httpx
 import pytest
 from httpx import AsyncClient
 
 from app.services import delivery
 from app.services.delivery import deliver_event
 
-
-class FakeResponse:
-    def __init__(self, status_code, text):
-        self.status_code = status_code
-        self.text = text
 
 class ClientReplacement:
     def __init__(self, *args, **kwargs):
@@ -20,7 +16,7 @@ class ClientReplacement:
         return self
 
     async def post(self, url, *args, **kwargs):
-        return FakeResponse(200, "ok")
+        return httpx.Response(200, text="ok")
 
     async def __aexit__(self, exc_type, exc, tb):
         pass
