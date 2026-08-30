@@ -1,7 +1,9 @@
-import httpx
-import pytest
 from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime
+
+import httpx
+import pytest
+
 from app.services.retry_policy import Outcome, classify, next_delay, parse_retry_after
 
 

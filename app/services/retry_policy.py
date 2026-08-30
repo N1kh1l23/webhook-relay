@@ -1,7 +1,8 @@
 import random
-from enum import Enum
-from email.utils import parsedate_to_datetime
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+from enum import Enum
+
 import httpx
 
 
