@@ -1,7 +1,7 @@
 from enum import Enum
 
 import httpx
-
+import random
 
 class Outcome(Enum):
     SUCCESS = "success"
@@ -33,3 +33,7 @@ def classify(result: httpx.Response | Exception) -> Outcome:
     elif isinstance(result, httpx.RemoteProtocolError):
         return Outcome.RETRY
     return Outcome.RETRY
+
+def next_delay(previous_delay_ms: int, base_ms: int = 15_000, cap_ms: int = 300_000) -> int:
+    randnum = random.randint(base_ms, max(previous_delay_ms * 3, base_ms))
+    return min(randnum, cap_ms)
